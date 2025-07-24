@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Tüm Ödemeler{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <h2 class="mb-4">Tüm Ödemeler ve Komisyonlar</h2>
+
+    {# Genel özet kartı #}
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="alert alert-info shadow-sm">
+                <ul class="list-unstyled mb-0">
+    <li>Toplam Ödenen Tutar: <strong class="text-primary">{{ total_paid_amount|floatformat:2 }} TL</strong></li>
+    <li>Toplam Uzman Komisyonu: <strong class="text-success">{{ total_expert_commission|floatformat:2 }} TL</strong></li>
+    <li>Toplam Temsilci Komisyonu: <strong class="text-info">{{ total_agent_commission|floatformat:2 }} TL</strong></li>
+
+    {% if total_sub_agent_commission %}
+        <li>
+            <span class="text-muted">Alt Temsilcilerden Gelen Komisyon:</span>
+            <strong class="text-warning">{{ total_sub_agent_commission|floatformat:2 }} TL</strong>
+        </li>
+        <li>
+            <span class="fw-bold">Toplam Temsilci Geliri:</span>
+            <strong class="text-dark">
+                {{ total_agent_commission|add:total_sub_agent_commission|floatformat:2 }} TL
+            </strong>
+        </li>
+    {% endif %}
+</ul>
+
+            </div>
+        </div>
+    </div>
+
+    {# Filtreleme formu #}
+    <form method="GET" class="mb-4 p-3 border rounded bg-light shadow-sm">
+        <div class="row g-3">
+            <div class="col-md-3"> {# Genişlik düzenlendi #}
+                <label for="expert_filter" class="form-label">Uzmana Göre Filtrele:</label>
+                <select name="expert" id="expert_filter" class="form-select">
+                    <option value="">Tüm Uzmanlar</option>
+                    {% for expert in experts %}
+                        <option value="{{ expert.id }}" {% if expert.id|stringformat:"d" == current_expert %}selected{% endif %}>
+                            {{ expert.user.get_full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3"> {# Genişlik düzenlendi #}
+                <label for="agent_filter" class="form-label">Temsilciye Göre Filtrele:</label>
+                <select name="agent" id="agent_filter" class="form-select">
+                    <option value="">Tüm Temsilciler</option>
+                    {% for agent in agents %}
+                        <option value="{{ agent.id }}" {% if agent.id|stringformat:"d" == current_agent %}selected{% endif %}>
+                            {{ agent.user.get_full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3"> {# Genişlik düzenlendi #}
+                <label for="service_type_filter" class="form-label">Hizmet Tipine Göre Filtrele:</label>
+                <select name="service_type" id="service_type_filter" class="form-select">
+                    <option value="">Tüm Hizmetler</option>
+                    {% for value, label in service_choices %}
+                        <option value="{{ value }}" {% if value == current_service_type %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {# YENİ: Ay ve Yıl Filtreleri #}
+            <div class="col-md-3"> {# Genişlik düzenlendi #}
+                <label for="month_filter" class="form-label">Aya Göre Filtrele:</label>
+                <select name="month" id="month_filter" class="form-select">
+                    <option value="">Tüm Aylar</option>
+                    {% for month_num, month_name in months %}
+                        <option value="{{ month_num }}" {% if month_num|stringformat:"d" == current_month %}selected{% endif %}>
+                            {{ month_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3"> {# Genişlik düzenlendi #}
+                <label for="year_filter" class="form-label">Yıla Göre Filtrele:</label>
+                <select name="year" id="year_filter" class="form-select">
+                    <option value="">Tüm Yıllar</option>
+                    {% for year_val, year_name in years %}
+                        <option value="{{ year_val }}" {% if year_val|stringformat:"d" == current_year %}selected{% endif %}>
+                            {{ year_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {# Butonlar ayrı bir satıra taşındı ve hizalandı #}
+            <div class="col-12 d-flex justify-content-end mt-3">
+                <button type="submit" class="btn btn-primary me-2">Filtrele</button>
+                <a href="{% url 'payments:list' %}" class="btn btn-secondary">Temizle</a>
+            </div>
+        </div>
+    </form>
+
+    {% if payments %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>Randevu ID</th>
+                    <th>Danışan</th>
+                    <th>Uzman</th>
+                    <th>Temsilci</th>
+                    <th>Hizmet Tipi</th> 
+                    <th>Ödenen Tutar</th>
+                    <th>Ödeme Yöntemi</th>
+                    <th>Ödeme Tarihi</th>
+                    <th>Uzman Komisyonu</th>
+                    <th>Temsilci Komisyonu</th>
+                    <th>Komisyon Hesaplandı mı?</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td>{{ payment.appointment.id }}</td>
+                    <td>{{ payment.appointment.client.get_full_name }}</td>
+                    <td>Dr. {{ payment.appointment.expert.user.get_full_name }}</td>
+                    <td>
+                        {% if payment.appointment.agent %}
+                            {{ payment.appointment.agent.user.get_full_name }}
+                        {% else %}
+                            <span class="text-muted">Yok</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ payment.appointment.get_service_type_display }}</td> 
+                    <td><strong class="text-primary">{{ payment.amount_paid|floatformat:2 }} TL</strong></td>
+                    <td>{{ payment.get_payment_method_display }}</td>
+                    <td>{{ payment.payment_date|date:"d M Y H:i" }}</td>
+                    <td><strong class="text-success">{{ payment.expert_commission|floatformat:2 }} TL</strong></td>
+                    <td><strong class="text-info">{{ payment.agent_commission|floatformat:2 }} TL</strong></td>
+                    <td>
+                        {% if payment.is_commission_calculated %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Evet</span>
+                        {% else %}
+                            <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Hayır</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="11" class="text-center text-muted">Filtrelere uygun ödeme bulunamadı.</td> 
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="alert alert-warning text-center">
+        Henüz hiç ödeme kaydı bulunmamaktadır.
+    </div>
+    {% endif %}
+
+    {# Sayfalama kontrolleri #}
+    {% if is_paginated %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center mt-4">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.expert %}&expert={{ request.GET.expert }}{% endif %}{% if request.GET.agent %}&agent={{ request.GET.agent }}{% endif %}{% if request.GET.service_type %}&service_type={{ request.GET.service_type }}{% endif %}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}">Önceki</a></li>
+            {% endif %}
+            <li class="page-item active"><a class="page-link" href="#">{{ page_obj.number }}</a></li>
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.expert %}&expert={{ request.GET.expert }}{% endif %}{% if request.GET.agent %}&agent={{ request.GET.agent }}{% endif %}{% if request.GET.service_type %}&service_type={{ request.GET.service_type }}{% endif %}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}">Sonraki</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

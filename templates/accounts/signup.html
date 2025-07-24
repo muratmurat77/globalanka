@@ -1,0 +1,149 @@
+{# accounts/signup.html #}
+{% extends "base.html" %}
+
+{% block title %}Kayıt Ol - Anka Klinik{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6"> {# Daha geniş bir form için col-md-8 veya col-lg-6 kullanabiliriz #}
+            <div class="card shadow">
+                <div class="card-header bg-success text-white"> {# Kayıt için farklı bir renk deneyebiliriz #}
+                    <h4 class="mb-0 text-center">
+                        <i class="fas fa-user-plus me-2"></i>Hesap Oluştur
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {# Formun genel hataları için (non_field_errors) - örn. şifreler eşleşmiyor #}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mb-3" role="alert">
+                                {% for error in form.non_field_errors %}
+                                    <p class="mb-0">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        {# Django form alanlarını tek tek render ediyoruz ve hataları yönetiyoruz #}
+                        {# CustomUser modelinizdeki 'fields' sırasına göre burada da render edin #}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
+                            <input type="text" 
+                                   name="{{ form.username.name }}" 
+                                   class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                                   required 
+                                   id="{{ form.username.id_for_label }}" 
+                                   value="{{ form.username.value|default:'' }}">
+                            {% if form.username.errors %}
+                                {% for error in form.username.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                            <input type="email" 
+                                   name="{{ form.email.name }}" 
+                                   class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                                   required 
+                                   id="{{ form.email.id_for_label }}" 
+                                   value="{{ form.email.value|default:'' }}">
+                            {% if form.email.errors %}
+                                {% for error in form.email.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }}</label>
+                            <input type="text" 
+                                   name="{{ form.first_name.name }}" 
+                                   class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.first_name.id_for_label }}" 
+                                   value="{{ form.first_name.value|default:'' }}">
+                            {% if form.first_name.errors %}
+                                {% for error in form.first_name.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">{{ form.last_name.label }}</label>
+                            <input type="text" 
+                                   name="{{ form.last_name.name }}" 
+                                   class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.last_name.id_for_label }}" 
+                                   value="{{ form.last_name.value|default:'' }}">
+                            {% if form.last_name.errors %}
+                                {% for error in form.last_name.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">{{ form.phone.label }}</label>
+                            <input type="tel" 
+                                   name="{{ form.phone.name }}" 
+                                   class="form-control {% if form.phone.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.phone.id_for_label }}" 
+                                   value="{{ form.phone.value|default:'' }}">
+                            {% if form.phone.errors %}
+                                {% for error in form.phone.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label">Şifre</label> {# Etiketi doğrudan yazıyoruz, çünkü UserCreationForm kendi etiketini kullanır #}
+                            <input type="password" 
+                                   name="{{ form.password1.name }}" 
+                                   class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
+                                   required 
+                                   id="{{ form.password1.id_for_label }}">
+                            {% if form.password1.errors %}
+                                {% for error in form.password1.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            <div class="form-text text-muted">
+                                Şifreniz en az 8 karakter olmalı, yaygın olarak kullanılan bir şifre olmamalı ve tamamen rakamlardan oluşmamalıdır.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label">Şifre (Tekrar)</label> {# Etiketi doğrudan yazıyoruz #}
+                            <input type="password" 
+                                   name="{{ form.password2.name }}" 
+                                   class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                                   required 
+                                   id="{{ form.password2.id_for_label }}">
+                            {% if form.password2.errors %}
+                                {% for error in form.password2.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Kayıt Ol
+                            </button>
+                        </div>
+                        <div class="text-center mt-3">
+                            Zaten bir hesabın var mı? <a href="{% url 'accounts:login' %}" class="text-decoration-none">Giriş Yap</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

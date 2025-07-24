@@ -1,0 +1,23 @@
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+.Python
+.coverage
+.env/
+venv/
+env/
+/media
+/staticfiles
+
+# SQLite
+db.sqlite3
+
+# Operating System Files
+.DS_Store
+.Trash
+Thumbs.db
+
+# VS Code specific (if applicable)
+.vscode/

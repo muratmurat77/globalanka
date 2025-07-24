@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% load static %} {# Font Awesome için gerekebilir #}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+    <div class="mb-4 text-end">
+        <a href="{% url 'accounts:agent_add_client' %}" class="btn btn-success">
+            <i class="fas fa-user-plus me-2"></i>Yeni Müşteri Ekle
+        </a>
+    </div>
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <h1 class="mb-4">{{ title }}</h1>
+        <p>Atanmış müşterilerinizin yönetimi ve yaklaşan randevuları burada görüntüleyebilirsiniz.</p>
+
+        {% if clients %}
+            {# --- YENİ EKLENEN KISIM: Müşteri listesi tablosu --- #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="card-title mb-0"><i class="fas fa-users me-2"></i>Atanmış Müşterilerim</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Müşteri Adı</th>
+                                    <th>Telefon Numarası</th> {# Telefon numarası sütunu eklendi #}
+                                    <th>İşlemler</th> {# İşlemler sütunu eklendi #}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for client in clients %}
+                                    <tr>
+                                        <td>{{ client.get_full_name|default:client.username }}</td>
+                                        <td>
+                                            {% if client.phone %} {# Telefon numarası alanı kontrolü #}
+                                                <a href="tel:{{ client.phone}}" class="text-decoration-none">{{ client.phone }}</a>
+                                            {% else %}
+                                                Bilgi Yok
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                      
+                                            <a href="{% url 'appointments:create' %}" class="btn btn-sm btn-outline-success me-2" title="Randevu Oluştur"><i class="fas fa-calendar-plus"></i></a>
+                                            <a href="#" class="btn btn-sm btn-outline-info" title="Randevularını Gör"><i class="fas fa-calendar-alt"></i></a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {# --- Müşteri listesi tablosu BİTTİ --- #}
+        {% else %}
+            <div class="alert alert-info">Henüz size atanmış bir müşteri bulunmamaktadır.</div>
+        {% endif %}
+
+        {# --- YENİ EKLENEN KISIM: Yaklaşan Randevular --- #}
+        {% if upcoming_appointments %}
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-warning text-dark">
+                    <h2 class="card-title mb-0"><i class="fas fa-bell me-2"></i>Yaklaşan Müşteri Randevuları (Sonraki 7 Gün)</h2>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for app in upcoming_appointments %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Müşteri:</strong> {{ app.client.get_full_name|default:app.client.username }}<br>
+                                    <strong>Doktor:</strong> Dr. {{ app.expert.user.get_full_name }}<br>
+                                    <strong>Tarih & Saat:</strong> <span class="text-primary">{{ app.date|date:"d F Y H:i" }}</span><br>
+                                    <strong>Durum:</strong> 
+                                    <span class="badge 
+                                        {% if app.status == 'confirmed' %}bg-success
+                                        {% elif app.status == 'pending' %}bg-warning text-dark
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ app.get_status_display }}
+                                    </span>
+                                </div>
+                            
+                                <a href="#" class="btn btn-sm btn-outline-primary" title="Randevuyu Düzenle"><i class="fas fa-edit"></i></a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info mt-4">Yaklaşan müşteri randevusu bulunmamaktadır.</div>
+        {% endif %}
+        {# --- YAKLAŞAN RANDEVULAR BİTTİ --- #}
+
+    </div>
+</div>
+{% endblock %}

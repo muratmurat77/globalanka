@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %} {# Formları daha güzel göstermek için crispy_forms kullanıyorsanız #}
+
+{% block title %}Yeni Randevu Oluştur{% endblock %}
+{% include 'partials/messages.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-calendar-plus me-2"></i>Yeni Randevu
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" id="appointmentForm">
+                        {% csrf_token %}
+                        
+                        {# Müşteri Seçimi Alanı - Kullanıcının tipine göre gizlenecek/gösterilecek #}
+                        {# forms.py'deki __init__ metodunda CustomUser.user_type'a göre ayarlanıyor #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="{{ form.client.id_for_label }}">Müşteri Seçimi</label>
+                            {{ form.client }}
+                            {% if form.client.help_text %}
+                                <div class="form-text text-muted">{{ form.client.help_text }}</div>
+                            {% endif %}
+                            {% if form.client.errors %}
+                                <div class="text-danger small">{{ form.client.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {# Doktor Seçimi Alanı #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="{{ form.expert.id_for_label }}">Doktor Seçimi</label>
+                            {{ form.expert }}
+                            {% if form.expert.errors %}
+                                <div class="text-danger small">{{ form.expert.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {# Hizmet Tipi Alanı - Yeni Eklendi/Doğrulandı #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="{{ form.service_type.id_for_label }}">Uygulama / Hizmet Tipi</label>
+                            {{ form.service_type }}
+                            {% if form.service_type.errors %}
+                                <div class="text-danger small">{{ form.service_type.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {# Randevu Tarihi Girişi (HTML5 date input) #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="id_selected_date">Randevu Tarihi</label>
+                            <input type="date" id="id_selected_date" class="form-control" required>
+                            {# non_field_errors genellikle formun genel hatalarını içerir, tarih için de olabilir #}
+                            {% if form.non_field_errors %}
+                                <div class="text-danger small mt-2">{{ form.non_field_errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {# Müsait Saatler Alanı #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Müsait Saatler</label>
+                            <div id="id_available_time_slots" class="d-flex flex-wrap gap-2 border p-3 rounded bg-light">
+                                <p class="text-muted">Lütfen doktor ve tarih seçin.</p>
+                            </div>
+                            <small id="timeSlotHelp" class="form-text text-muted">Müsait saatleri görmek için doktor ve tarih seçin.</small>
+                            <div id="timeSlotError" class="text-danger small mt-2"></div>
+                        </div>
+
+                        {# Gizli Randevu Tarih ve Saat Alanı - AJAX ile doldurulacak #}
+                        {# Bu alan form.date ile eşleşiyor. style="display:none;" ile gizlendi #}
+                        <div style="display:none;">
+                            {{ form.date }}
+                            {% if form.date.errors %}
+                                <div class="text-danger small mt-2">{{ form.date.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {# Notlar Alanı #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="{{ form.notes.id_for_label }}">Notlar</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small">{{ form.notes.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        {# Amount, Status, Payment_Status alanları sadece admin için görünür, diğerleri için forms.py'de gizleniyor #}
+                        {% if request.user.is_staff or request.user.user_type == 'admin' %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" for="{{ form.amount.id_for_label }}">Ücret</label>
+                                {{ form.amount }}
+                                {% if form.amount.errors %}
+                                    <div class="text-danger small">{{ form.amount.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                {{ form.payment_status }}
+                                <label class="form-check-label fw-bold" for="{{ form.payment_status.id_for_label }}">Ödeme Durumu</label>
+                                {% if form.payment_status.errors %}
+                                    <div class="text-danger small">{{ form.payment_status.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" for="{{ form.status.id_for_label }}">Durum</label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger small">{{ form.status.errors }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Randevu Oluştur
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const expertSelect = document.getElementById('id_expert');
+        const dateInput = document.getElementById('id_selected_date');
+        const availableSlotsDiv = document.getElementById('id_available_time_slots');
+        const hiddenDateInput = document.getElementById('id_date'); 
+        const timeSlotErrorDiv = document.getElementById('timeSlotError');
+        const today = new Date().toISOString().split('T')[0]; 
+
+        dateInput.min = today; 
+
+        // Retrieve initial date and time if form.instance.date exists (for update view)
+        // Eğer bu form bir güncelleme formu olarak kullanılıyorsa, mevcut randevunun tarihini yüklüyoruz.
+        const initialDateStr = "{{ form.instance.date|date:'Y-m-d'|default:'' }}";
+        const initialTimeStr = "{{ form.instance.date|date:'H:i'|default:'' }}"; // Sadece saati alıyoruz
+        const initialDateTimeStr = "{{ form.instance.date|date:'Y-m-dTH:i'|default:'' }}"; // Tam datetime-local formatı
+
+        if (initialDateStr) { 
+            dateInput.value = initialDateStr;
+            hiddenDateInput.value = initialDateTimeStr; // Gizli alanı doldur
+
+            // Eğer bir randevu güncelleniyorsa, mevcut saatini seçili olarak işaretle
+            if (expertSelect.value && dateInput.value) {
+                fetchAvailableSlots(initialTimeStr); // Mevcut saati highlight etmek için initialTimeStr'ı gönder
+            }
+        }
+        
+        expertSelect.addEventListener('change', fetchAvailableSlots);
+        dateInput.addEventListener('change', fetchAvailableSlots);
+
+        // initialSelectedTime parametresi eklendi
+        function fetchAvailableSlots(initialSelectedTime = null) {
+            const expertId = expertSelect.value;
+            const selectedDate = dateInput.value;
+
+            if (!expertId || !selectedDate) {
+                availableSlotsDiv.innerHTML = '<p class="text-muted">Lütfen doktor ve tarih seçin.</p>';
+                timeSlotErrorDiv.innerHTML = '';
+                hiddenDateInput.value = ''; 
+                return;
+            }
+
+            const todayDate = new Date(today);
+            const inputDate = new Date(selectedDate);
+            if (inputDate < todayDate) {
+                 availableSlotsDiv.innerHTML = '<p class="text-danger">Geçmiş bir tarih için randevu alınamaz.</p>';
+                 timeSlotErrorDiv.innerHTML = 'Geçmiş bir tarih seçtiniz.';
+                 hiddenDateInput.value = '';
+                 return;
+            }
+
+            availableSlotsDiv.innerHTML = '<p class="text-info">Müsait saatler yükleniyor...</p>';
+            timeSlotErrorDiv.innerHTML = ''; 
+            hiddenDateInput.value = ''; 
+
+            fetch(`/appointments/get-available-slots/?expert_id=${expertId}&date=${selectedDate}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' 
+                }
+            })
+            .then(response => {
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    return response.json().then(data => {
+                        if (!response.ok) {
+                            throw new Error(data.error || 'Müsait saatler yüklenirken sunucu hatası oluştu.');
+                        }
+                        return data;
+                    });
+                } else {
+                    return response.text().then(text => {
+                        console.error("Beklenmeyen yanıt tipi (JSON değil):", text);
+                        throw new Error("Sunucudan beklenen yanıt gelmedi. Lütfen sistem yöneticisiyle iletişime geçin. (Ayrıntılar için konsolu kontrol edin)");
+                    });
+                }
+            })
+            .then(data => {
+                availableSlotsDiv.innerHTML = ''; 
+                if (data.available_slots && data.available_slots.length > 0) {
+                    data.available_slots.forEach(slot => {
+                        const button = document.createElement('button');
+                        button.type = 'button'; 
+                        button.classList.add('btn', 'btn-outline-primary', 'btn-sm', 'time-slot-btn');
+                        button.textContent = slot;
+                        button.setAttribute('data-time', slot);
+                        
+                        // Eğer başlangıçta seçili bir zaman varsa ve bu slota uyuyorsa, işaretle
+                        if (initialSelectedTime && initialSelectedTime === slot) {
+                            button.classList.add('active');
+                            // Güncelleme formunda burası zaten otomatik set edildiği için hiddenDateInput'u yeniden set etmeye gerek yok
+                            // hiddenDateInput.value = `${selectedDate}T${slot}`; 
+                        }
+
+                        button.addEventListener('click', () => selectTimeSlot(button, selectedDate, slot));
+                        availableSlotsDiv.appendChild(button);
+                    });
+                    timeSlotErrorDiv.innerHTML = ''; 
+                } else {
+                    availableSlotsDiv.innerHTML = '<p class="text-danger">Bu tarihte uygun randevu saati bulunamadı veya doktor izinli.</p>';
+                    timeSlotErrorDiv.innerHTML = 'Uzmanın müsaitlik aralığı yok, izinli veya tüm saatler dolu.';
+                }
+            })
+            .catch(error => {
+                console.error('Müsait saatler alınırken hata:', error);
+                let errorMessage = 'Müsait saatler yüklenirken bir sorun oluştu.';
+                if (error.message) { 
+                    errorMessage = error.message;
+                }
+                availableSlotsDiv.innerHTML = `<p class="text-danger">${errorMessage}</p>`;
+                timeSlotErrorDiv.innerHTML = errorMessage;
+                hiddenDateInput.value = ''; 
+            });
+        }
+
+        function selectTimeSlot(selectedButton, selectedDate, selectedTime) {
+            document.querySelectorAll('.time-slot-btn.active').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            selectedButton.classList.add('active');
+
+            // hiddenDateInput'u sadece yeni bir zaman seçildiğinde güncelle
+            hiddenDateInput.value = `${selectedDate}T${selectedTime}`;
+            timeSlotErrorDiv.innerHTML = ''; 
+        }
+
+        document.getElementById('appointmentForm').addEventListener('submit', function(event) {
+            if (!hiddenDateInput.value) {
+                timeSlotErrorDiv.innerHTML = 'Lütfen müsait bir randevu saati seçin.';
+                event.preventDefault(); 
+            }
+        });
+    });
+</script>
+{% endblock %}

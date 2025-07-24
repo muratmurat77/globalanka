@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %} {# Crispy Forms kullanıyorsanız #}
+
+{% block title %}Randevu Güncelle - Anka Klinik{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Randevu Güncelle
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'appointments:update' object.pk %}" id="appointmentUpdateForm">
+                        {% csrf_token %}
+                        
+                        {# Müşteri Seçimi Alanı - Kullanıcının tipine göre gizlenecek/gösterilecek #}
+                        {# forms.py'deki __init__ metodunda CustomUser.user_type'a göre ayarlanıyor #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="{{ form.client.id_for_label }}">Müşteri Seçimi</label>
+                            {{ form.client }}
+                            {% if form.client.help_text %}
+                                <div class="form-text text-muted">{{ form.client.help_text }}</div>
+                            {% endif %}
+                            {% if form.client.errors %}
+                                <div class="text-danger small">{{ form.client.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {# Doktor Alanı - Salt okunur metin olarak gösteriliyor #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Doktor</label>
+                            <input type="text" class="form-control" 
+                                   value="Dr. {{ object.expert.user.get_full_name }} - {{ object.expert.specialization }}" readonly>
+                            {# form.expert gizli olarak tutulmalı ki POST isteği doğru expert ID'sini gönderebilsin #}
+                            <div style="display:none;">
+                                {{ form.expert }}
+                                {% if form.expert.errors %}
+                                    <div class="text-danger small mt-1">{{ form.expert.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Hizmet Tipi Alanı #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="{{ form.service_type.id_for_label }}">Uygulama / Hizmet Tipi</label>
+                            {{ form.service_type }}
+                            {% if form.service_type.errors %}
+                                <div class="text-danger small">{{ form.service_type.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {# Randevu Tarihi Girişi (HTML5 datetime-local input) #}
+                        {# Bu input, Django form alanına bağlanacak şekilde güncellendi #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="{{ form.date.id_for_label }}">Randevu Tarihi ve Saati</label>
+                            {{ form.date }} {# Django'nun datetime-local widget'ı burada render edilecek #}
+                            <div id="available-slots-display" class="mt-2 small text-info"></div>
+                            {% if form.date.errors %}
+                                <div class="text-danger mt-1">{{ form.date.errors }}</div>
+                            {% endif %}
+                            {% if form.non_field_errors %}
+                                <div class="text-danger small mt-2">{{ form.non_field_errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        {# Notlar Alanı #}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="{{ form.notes.id_for_label }}">Notlar</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger mt-1">{{ form.notes.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {# Amount, Status, Payment_Status alanları sadece admin için görünür, diğerleri için forms.py'de gizleniyor #}
+                        {% if request.user.is_staff or request.user.user_type == 'admin' %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" for="{{ form.amount.id_for_label }}">Ücret</label>
+                                {{ form.amount }}
+                                {% if form.amount.errors %}
+                                    <div class="text-danger small">{{ form.amount.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                {{ form.payment_status }}
+                                <label class="form-check-label fw-bold" for="{{ form.payment_status.id_for_label }}">Ödeme Durumu</label>
+                                {% if form.payment_status.errors %}
+                                    <div class="text-danger small">{{ form.payment_status.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold" for="{{ form.status.id_for_label }}">Durum</label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger mt-1">{{ form.status.errors }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-save me-2"></i>Randevuyu Güncelle
+                            </button> 
+                        </div>
+                    </form>
+                        {# İPTAL TUŞU İÇİN FORM #}
+                        <form id="cancel-form" method="post" action="{% url 'appointments:cancel' object.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-lg w-100" 
+                                    onclick="return confirm('Bu randevuyu iptal etmek istediğinizden emin misiniz?');">
+                                <i class="fas fa-ban me-2"></i>Randevuyu İptal Et
+                            </button>
+                        </form>            
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const expertSelect = document.getElementById('id_expert'); 
+        const dateInput = document.getElementById('id_date'); // forms.py'deki date alanının ID'si
+        const availableSlotsDisplay = document.getElementById('available-slots-display'); 
+        const appointmentUpdateForm = document.getElementById('appointmentUpdateForm');
+
+        // Sayfa yüklendiğinde mevcut randevu tarih ve saatini ayarlama
+        // dateInput zaten forms.py'de `initial` ile dolduruluyor olmalı.
+        // Burada sadece müsait saatleri getirmek için çağırıyoruz.
+        if (expertSelect.value && dateInput.value) {
+            fetchAvailableSlots(dateInput.value.split('T')[1]); // Sadece saati gönder (HH:MM)
+        }
+
+        expertSelect.addEventListener('change', fetchAvailableSlots);
+        dateInput.addEventListener('change', function() {
+            // Tarih değiştiğinde, sadece tarih kısmını alıp müsait saatleri tekrar getir
+            const selectedDatePart = dateInput.value.split('T')[0];
+            fetchAvailableSlots(); // Bu sefer spesifik bir zaman göndermiyoruz, genel müsaitliği listeliyoruz
+        });
+
+        function fetchAvailableSlots(initialSelectedTime = null) {
+            const selectedExpertId = expertSelect.value;
+            const selectedDateTimeValue = dateInput.value; 
+            
+            // Eğer datetime-local input boşsa veya geçersizse
+            if (!selectedExpertId || !selectedDateTimeValue) {
+                availableSlotsDisplay.textContent = 'Uzman ve tarih seçimi gerekiyor.';
+                return;
+            }
+
+            const selectedDate = selectedDateTimeValue.split('T')[0]; // YYYY-MM-DD formatında tarih
+            const selectedTime = selectedDateTimeValue.split('T')[1]; // HH:MM formatında saat
+
+            // Tarih kontrolü: geçmiş bir tarih mi?
+            const now = new Date();
+            const selectedDateObj = new Date(selectedDateTimeValue);
+
+            // current time is Friday, June 13, 2025 at 6:37:23 PM +03.
+            // Geçmiş tarih veya şu anki zamandan önceki bir zaman kontrolü
+            // 1 dakikalık bir esneklik tanıyabiliriz
+            if (selectedDateObj < new Date(now.getTime() - 60 * 1000)) { 
+                availableSlotsDisplay.innerHTML = '<span class="text-danger fw-bold">Geçmiş bir tarih veya şu anki zamandan önceki bir zaman seçemezsiniz!</span>';
+                return;
+            }
+
+
+            availableSlotsDisplay.textContent = 'Müsait saatler yükleniyor...';
+
+            fetch(`/appointments/get-available-slots/?expert_id=${selectedExpertId}&date=${selectedDate}`)
+                .then(response => {
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        return response.json().then(data => {
+                            if (!response.ok) {
+                                throw new Error(data.error || 'Müsait saatler yüklenirken sunucu hatası oluştu.');
+                            }
+                            return data;
+                        });
+                    } else {
+                        return response.text().then(text => {
+                            console.error("Beklenmeyen yanıt tipi (JSON değil):", text);
+                            throw new Error("Sunucudan beklenen yanıt gelmedi. Lütfen sistem yöneticisiyle iletişime geçin. (Ayrıntılar için konsolu kontrol edin)");
+                        });
+                    }
+                })
+                .then(data => {
+                    if (data.error) {
+                        availableSlotsDisplay.innerHTML = `<span class="text-danger fw-bold">Hata: ${data.error}</span>`;
+                        console.error('Randevu saatleri alınırken hata:', data.error);
+                        return;
+                    }
+
+                    const slots = data.available_slots;
+                    if (slots.length > 0) {
+                        let slotsHtml = '<p class="fw-bold">Müsait Saatler:</p><p>';
+                        const currentAppointmentTime = "{{ object.date|date:'H:i' }}"; // Mevcut randevunun saati
+
+                        slots.forEach(slot => {
+                            const isCurrent = (initialSelectedTime && initialSelectedTime === slot) || (currentAppointmentTime && currentAppointmentTime === slot);
+                            slotsHtml += `<span class="badge ${isCurrent ? 'bg-primary' : 'bg-secondary'} me-1">${slot}</span>`;
+                        });
+                        slotsHtml += '</p>';
+                        availableSlotsDisplay.innerHTML = slotsHtml;
+                        
+                        // Mevcut randevu saati müsait saatler arasında değilse uyar
+                        if (currentAppointmentTime && !slots.includes(currentAppointmentTime)) {
+                             availableSlotsDisplay.innerHTML += `<p class="text-danger fw-bold">Seçili ${currentAppointmentTime} saati şu an müsait değil veya başka bir randevuyla çakışıyor.</p>`;
+                        }
+
+                    } else {
+                        availableSlotsDisplay.innerHTML = '<span class="text-danger fw-bold">Bu tarihte uzman için müsait randevu saati bulunmamaktadır veya doktor izinli.</span>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Müsait saatleri getirirken bir hata oluştu:', error);
+                    availableSlotsDisplay.innerHTML = `<span class="text-danger fw-bold">Müsait saatler yüklenemedi: ${error.message}</span>`;
+                });
+        }
+    });
+</script>
+{% endblock %}

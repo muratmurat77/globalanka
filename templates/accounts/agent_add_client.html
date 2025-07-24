@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Yeni Müşteri Ekle{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Yeni Müşteri Ekle</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-success">Kaydet</button>
+        <a href="{% url 'accounts:agent_client_management' %}" class="btn btn-secondary">Geri Dön</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,155 @@
+{# klinik_yonetim/templates/partials/_navbar.html #}
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        {# Marka logosu ve ismi - Tüm kullanıcılar için varsayılan olarak randevu listesine yönlendirme #}
+        <a class="navbar-brand" href="{% url 'appointments:list' %}">
+            <i class="fas fa-clinic-medical me-2"></i>Anka Klinik
+        </a>
+        
+        {# Navigasyon menüsünü açma/kapama butonu (mobil görünüm için) #}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            {# Sol taraftaki menü öğeleri #}
+            <ul class="navbar-nav me-auto">
+                {% if user.is_authenticated %}
+                
+                {# Tüm yetkili kullanıcılar için Randevular ve Randevu Al linkleri #}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'appointments:list' %}">
+                        <i class="fas fa-calendar-alt me-1"></i> Randevular
+                    </a>
+                </li>
+
+                {# Sadece admin, agent ve client randevu oluşturabilir #}
+                {% if user.user_type == 'admin' or user.user_type == 'agent' or user.user_type == 'client' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'appointments:create' %}">
+                        <i class="far fa-calendar-plus me-1"></i> Randevu Al
+                    </a>
+                </li>
+                {% endif %}
+
+                {# YÖNETİCİYE (ADMIN) ÖZEL MENÜ ÖĞELERİ (Mevcut haliyle kalıyor) #}
+                {% if user.user_type == 'admin' %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="adminFinanceDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-chart-line me-1"></i> Finans Yönetimi
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="adminFinanceDropdown">
+                        <li><a class="dropdown-item" href="{% url 'payments:list' %}">
+                            <i class="fas fa-file-invoice-dollar me-2"></i> Tüm Ödemeler
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'payments:monthly_summary' %}">
+                            <i class="fas fa-calendar-check me-2"></i> Aylık Özet
+                        </a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'admin:index' %}">
+                        <i class="fas fa-cogs me-1"></i> Yönetici Paneli
+                    </a>
+                </li>
+                {% endif %}
+
+                {# KULLANICI ROLÜNE GÖRE KAZANÇLAR MENÜSÜ #}
+                {# Kullanıcının uzman veya temsilci profiline sahip olup olmadığını kontrol ediyoruz #}
+                {% if user.user_type != 'admin' %} {# Adminler zaten kendi finans menüsüne sahip #}
+                    {% comment %} 
+                        user.expert_profile ve user.agent_profile, CustomUser modelindeki
+                        Expert ve CustomerAgent modellerine OneToOneField ilişkisinin
+                        related_name'leri (varsayılan veya belirtilmişse) aracılığıyla erişimi sağlar.
+                    {% endcomment %}
+                    {% if user.expert_profile or user.agent_profile %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="myEarningsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-money-bill-wave me-1"></i> Kazançlarım
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="myEarningsDropdown">
+                                {# Eğer kullanıcı bir uzman ise, uzman komisyon linkini göster #}
+                                {% if user.expert_profile %}
+                                    <li><a class="dropdown-item" href="{% url 'payments:expert_commissions' %}">
+                                        <i class="fas fa-money-check-alt me-2"></i> İşlem Gelirlerim
+                                    </a></li>
+                                {% endif %}
+                                {# Eğer kullanıcı bir temsilci ise, temsilci gelir linkini göster #}
+                                {% if user.agent_profile %}
+                                    <li><a class="dropdown-item" href="{% url 'payments:agent_commissions' %}">
+                                        <i class="fas fa-hand-holding-usd me-2"></i> Temsilci Gelirlerim
+                                    </a></li>
+                                    {# YENİ EKLENEN: Temsilci alt temsilci gelirlerini görebilir #}
+                                    <li><a class="dropdown-item" href="{% url 'payments:sub_agent_commissions' %}">
+                                        <i class="fas fa-hand-holding-usd me-1"></i> Alt Temsilci Gelirlerim
+                                    </a></li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    
+                    {# Eğer kullanıcı bir Temsilci ise, Müşteri Yönetimi linkini göster (Uzman profili olup olmadığına bakılmaksızın) #}
+                    {% if user.user_type == 'agent' %} {# DÜZELTME BURADA YAPILDI #}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:agent_client_management' %}"> 
+                                <i class="fas fa-users-cog me-1"></i> Müşteri Yönetimi
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {# Eğer kullanıcı sadece Uzman ise ve ayrıca bir Agent profili yoksa, Uzman Paneli linkini göster #}
+                    {% if user.user_type == 'expert' and not user.agent_profile %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:uzman_panosu' %}"> 
+                                <i class="fas fa-user-md me-1"></i> Uzman Paneli
+                            </a>
+                        </li>
+                    {% endif %}
+
+                {% endif %} {# end if not user.user_type == 'admin' #}
+                
+                {% endif %} {# end if user.is_authenticated - Sol Menü #}
+            </ul>
+            
+            {# Sağ taraftaki kullanıcı menüsü #}
+            <ul class="navbar-nav">
+                {% if user.is_authenticated %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle me-1"></i> {{ user.get_full_name|default:user.username }} ({{ user.get_user_type_display }})
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">
+                            <i class="fas fa-user me-2"></i>Profilim
+                        </a></li>
+                        
+                        <li><hr class="dropdown-divider"></li>
+                        
+                        {# Çıkış İşlemi için GÜVENLİ FORM #}
+                        <li>
+                            <form action="{% url 'accounts:logout' %}" method="post" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item" style="background: none; border: none; padding: 0.5rem 1rem; width: 100%; text-align: left;">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Çıkış Yap
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+                {% else %} {# Kullanıcı oturum açmamışsa #}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'accounts:login' %}">
+                        <i class="fas fa-sign-in-alt me-1"></i> Giriş Yap
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'accounts:signup' %}">
+                        <i class="fas fa-user-plus me-1"></i> Kayıt Ol
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

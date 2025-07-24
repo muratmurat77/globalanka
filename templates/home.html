@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Anka Klinik - Ana Sayfa{% endblock %}
+
+{% block content %}
+<div class="jumbotron jumbotron-fluid text-center bg-light py-5">
+    <div class="container">
+        <h1 class="display-4 fw-bold text-primary">Anka Klinik'e Hoş Geldiniz!</h1>
+        <p class="lead text-secondary">Sağlığınız bizim önceliğimizdir. Uzman doktorlarımızla tanışın ve randevunuzu kolayca alın.</p>
+        <hr class="my-4">
+        {% if user.is_authenticated %}
+            <p>Merhaba, **{{ user.first_name|default:user.username }}**!</p>
+            <a class="btn btn-primary btn-lg mt-3 me-2" href="{% url 'appointments:list' %}" role="button">Randevularımı Gör</a>
+            <a class="btn btn-outline-primary btn-lg mt-3" href="{% url 'appointments:create' %}" role="button">Yeni Randevu Al</a>
+        {% else %}
+            <p class="mt-4">Hizmetlerimizden faydalanmak için giriş yapın veya kayıt olun.</p>
+            <a class="btn btn-primary btn-lg me-2" href="{% url 'accounts:login' %}" role="button">Giriş Yap</a>
+            <a class="btn btn-success btn-lg" href="{% url 'accounts:signup' %}" role="button">Kayıt Ol</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container mt-5">
+    <div class="row text-center">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-stethoscope fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Uzman Kadro</h5>
+                    <p class="card-text">Alanında uzman ve deneyimli doktorlarımızla en iyi hizmeti sunuyoruz.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Kolay Randevu</h5>
+                    <p class="card-text">Online sistemimiz üzerinden saniyeler içinde randevu oluşturun.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-headset fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">7/24 Destek</h5>
+                    <p class="card-text">Her türlü sorunuz ve ihtiyacınız için müşteri temsilcilerimiz yanınızda.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

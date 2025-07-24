@@ -1,1 +1,0 @@
-# globalanka

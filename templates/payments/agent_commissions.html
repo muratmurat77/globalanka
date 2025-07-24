@@ -1,0 +1,83 @@
+{# payments/agent_commissions.html #}
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %} {# Başlık artık views.py'den geliyor #}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Temsilci Komisyonlarım</h2>
+    {# Mesajlar artık base.html tarafından otomatik olarak dahil edildiği için buradan kaldırıldı. #}
+    {# {% include 'partials/messages.html' %} #}
+
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="alert alert-info shadow-sm">
+                <p class="h5 mb-0">Toplam Kazanılan Komisyon:</p>
+                <strong class="h4 text-info">{{ total_commission|floatformat:2 }} TL</strong>
+            </div>
+        </div>
+    </div>
+
+    {% if commissions %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>Randevu Tarihi</th>
+                    <th>Danışan</th>
+                    <th>Uzman</th>
+                    <th>Hizmet Tipi</th>
+                    <th>Ödenen Tutar</th> {# Bu sütun Payment modelindeki amount_paid alanını gösterecek #}
+                    <th>Komisyon Oranı</th>
+                    <th>Kazanılan Komisyon</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in commissions %}
+                <tr>
+                    <td>{{ payment.payment_date|date:"d M Y H:i" }}</td> {# Randevu tarihi yerine ödeme tarihi kullanıldı #}
+                    <td>{{ payment.appointment.client.get_full_name }}</td>
+                    <td>Dr. {{ payment.appointment.expert.user.get_full_name }}</td>
+                    <td>{{ payment.appointment.get_service_type_display }}</td>
+                    <td>{{ payment.amount_paid|floatformat:2 }} TL</td> {# BURADA DÜZELTME YAPILDI #}
+                    <td>
+                        {# Temsilci komisyon oranı agent profilinden gelmeli #}
+                        {% if payment.appointment.agent and payment.appointment.agent.commission_rate %}
+                            %{{ payment.appointment.agent.commission_rate|floatformat:2 }}
+                        {% else %}
+                            %0.00
+                        {% endif %}
+                    </td>
+                    <td><strong class="text-info">{{ payment.agent_commission|floatformat:2 }} TL</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="alert alert-warning text-center">
+        Henüz size ait hesaplanmış bir komisyon bulunmamaktadır.
+    </div>
+    {% endif %}
+
+    {# Sayfalama kontrolleri #}
+    {% if is_paginated %}
+        <nav aria-label="Sayfalama">
+            <ul class="pagination justify-content-center mt-4">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Önceki</a>
+                    </li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Sonraki</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}

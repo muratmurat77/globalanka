@@ -1,0 +1,114 @@
+{# payments/expert_commissions.html #}
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %} {# Başlık view'dan gelecek, örn: "Uzman Komisyonlarım" #}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h1 class="mb-4">{{ title }}</h1>
+            <p>Kazandığınız komisyonlarınızı ve detaylarını bu sayfadan görüntüleyebilirsiniz.</p>
+
+            {# MESAJLAR BURADAN KALDIRILDI: Mesajlar artık base.html tarafından otomatik olarak dahil edildiği için burada kaldırıldı. #}
+            {# {% include 'partials/messages.html' %} #}
+
+            {# Toplam Kazanılan Komisyon Özeti Kartı #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h2 class="card-title mb-0"><i class="fas fa-money-check-alt me-2"></i>Toplam İşlem Geliriniz </h2>
+                </div>
+                <div class="card-body">
+                    {# total_commission ExpertCommissionListView'dan gelmeli #}
+                    <p class="h5 mb-0">Genel Toplam Komisyon:</p>
+                    {# Eğer total_commission boşsa veya yoksa 0.00 olarak göster #}
+                    <strong class="h4 text-success">{{ total_commission|default:0|floatformat:2 }} TL</strong>
+                    <p class="text-muted mt-2">Bu, size ödenen veya ödenmesi beklenen tüm komisyonlarınızın toplamıdır.</p>
+                </div>
+            </div>
+
+            {# Komisyon Listesi Tablosu #}
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="card-title mb-0"><i class="fas fa-list-ul me-2"></i>Gelir Detayları</h2>
+                </div>
+                <div class="card-body">
+                    {# BURADAKİ DEĞİŞİKLİK: commissions context objesi kullanıldı #}
+                    {% if commissions %} 
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Ödeme Tarihi</th> {# Randevu Tarihi yerine Ödeme Tarihi daha doğru #}
+                                    <th>Müşteri</th>
+                                    <th>Hizmet Tipi</th>
+                                    <th>Ödenen Tutar</th> {# payment.amount_paid kullanılacak #}
+                                    <th>Komisyon Oranı</th>
+                                    <th>Kazancınız (TL)</th>
+                                    <th>Komisyon Hesaplandı mı?</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {# BURADAKİ DEĞİŞİKLİK: commissions üzerinden döngü #}
+                                {% for payment in commissions %}
+                                <tr>
+                                    <td>{{ payment.payment_date|date:"d M Y H:i" }}</td> {# Ödeme tarihi kullanıldı #}
+                                    <td>{{ payment.appointment.client.get_full_name|default:payment.appointment.client.username }}</td>
+                                    <td>{{ payment.appointment.get_service_type_display }}</td>
+                                    {# Ödenen tutar Payment modelinin kendi alanından alınır #}
+                                    <td>{{ payment.amount_paid|default:0|floatformat:2 }} TL</td> {# BURADA DÜZELTME YAPILDI #}
+                                    <td>
+                                        {# Uzman komisyon oranı expert profilinden gelmeli #}
+                                        {% if payment.appointment.expert and payment.appointment.expert.commission_rate %}
+                                            %{{ payment.appointment.expert.commission_rate|floatformat:2 }}
+                                        {% else %}
+                                            %0.00
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {# Kazanılan komisyon, Payment modelinin expert_commission alanından gelir #}
+                                        <strong class="text-success">{{ payment.expert_commission|default:0|floatformat:2 }} TL</strong>
+                                    </td>
+                                    <td>
+                                        {% if payment.is_commission_calculated %}
+                                            <span class="badge bg-success">Evet</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Hayır</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i> Henüz size ait hesaplanmış bir komisyon bulunmamaktadır.
+                    </div>
+                    {% endif %}
+
+                    {# Sayfalama kontrolleri #}
+                    {% if is_paginated %}
+                        <nav aria-label="Sayfalama">
+                            <ul class="pagination justify-content-center mt-4">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Önceki</a>
+                                    </li>
+                                {% endif %}
+                                <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Sonraki</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

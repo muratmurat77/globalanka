@@ -1,0 +1,180 @@
+{# appointments/list.html #}
+{% extends "base.html" %}
+
+{% block title %}Randevularım - Anka Klinik{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        {# MESAJLAR BURADAN KALDIRILDI: Mesajlar artık base.html tarafından otomatik olarak dahil edildiği için burada kaldırıldı. #}
+        {# {% include 'partials/messages.html' %} #}
+
+        {# FİLTRELEME FORMU BAŞLANGICI #}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-filter me-2"></i>Randevuları Filtrele
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3 align-items-end">
+                    {# Müşteri Adı Filtresi: Müşteri tipi dışındaki kullanıcılar için göster #}
+                    {% if request.user.user_type != 'client' %}
+                    <div class="col-md-5">
+                        <label for="id_client_name" class="form-label">Müşteri Adı / Kullanıcı Adı</label>
+                        <input type="text" class="form-control" id="id_client_name" name="client_name"
+                               value="{{ current_client_name }}" placeholder="Müşteri adı veya kullanıcı adı">
+                    </div>
+                    {% endif %}
+
+                    {# Randevu Tarihi Filtresi #}
+                    <div class="col-md-5">
+                        <label for="id_date" class="form-label">Randevu Tarihi</label>
+                        {# current_date view'dan gelir, date input'u için Y-m-d formatında olmalıdır #}
+                        <input type="date" class="form-control" id="id_date" name="date"
+                               value="{{ current_date|date:'Y-m-d' }}"> 
+                    </div>
+
+                    {# Filtrele ve Temizle Butonları #}
+                    <div class="col-md-2 d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>Filtrele
+                        </button>
+                        {# Eğer herhangi bir filtre uygulanmışsa "Filtreyi Temizle" butonunu göster #}
+                        {% if current_client_name or current_date %}
+                        <a href="{% url 'appointments:list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Filtreyi Temizle
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+        {# FİLTRELEME FORMU BİTİŞİ #}
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-list-ol me-2"></i>Randevularım
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if object_list %} {# Randevu listesi varsa tabloyu göster #}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                {% if show_client %} {# Müşteri sütunu sadece belirli roller için gösterilir #}
+                                <th>Müşteri</th>
+                                {% endif %}
+                                <th>Doktor</th>
+                                <th>Randevu Tarihi</th>
+                                <th>Hizmet Tipi</th>
+                                <th>Durum</th>
+                                <th>Ödeme Durumu</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in object_list %}
+                            <tr>
+                                {% if show_client %}
+                                <td>
+                                    {{ appointment.client.get_full_name|default:appointment.client.username }}
+                                    {% if appointment.agent %}
+                                    <br>
+                                    <small class="text-muted">
+                                        Temsilci: {{ appointment.agent.user.get_full_name }}
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                                <td>Dr. {{ appointment.expert.user.get_full_name }}</td>
+                                <td>{{ appointment.date|date:"d F Y H:i" }}</td>
+                                <td>{{ appointment.get_service_type_display }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if appointment.status == 'confirmed' %}bg-success
+                                        {% elif appointment.status == 'pending' %}bg-warning text-dark
+                                        {% elif appointment.status == 'cancelled' %}bg-danger
+                                        {% elif appointment.status == 'completed' %}bg-primary
+                                        {% endif %}">
+                                        {{ appointment.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if appointment.payment_status %}
+                                        <span class="badge bg-success">Ödendi</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Ödenmedi</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'appointments:update' appointment.pk %}" class="btn btn-sm btn-outline-primary mb-1">
+                                        Düzenle
+                                    </a>
+                                    
+                                    {# Ödeme Al butonu: sadece admin, agent veya expert ise ve randevu tamamlanmadıysa/ödenmediyse göster #}
+                                    {% if request.user.user_type == 'admin' or request.user.user_type == 'agent' or request.user.user_type == 'expert' %}
+                                        {% if appointment.status != 'completed' and not appointment.payment_status %}
+                                            <a href="{% url 'payments:create_payment' pk=appointment.pk %}" class="btn btn-sm btn-success mb-1 ms-1">
+                                                Ödeme Al
+                                            </a>
+                                        {% else %}
+                                            <span class="badge bg-secondary mb-1 ms-1">İşlem Tamamlandı</span>
+                                            {% if appointment.payment %} {# Eğer bir ödeme kaydı varsa #}
+                                                <a href="{% url 'admin:payments_payment_change' appointment.payment.pk %}" class="btn btn-sm btn-info mb-1 ms-1" target="_blank" title="Admin panelinde ödeme detaylarını gör">
+                                                    <i class="fas fa-money-bill-wave"></i> Detay
+                                                </a>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                {# colspan değeri, başlık satırındaki sütun sayısına göre ayarlanır #}
+                                <td colspan="{% if show_client %}7{% else %}6{% endif %}" class="text-center">
+                                    <div class="alert alert-info">Henüz randevunuz bulunmamaktadır.</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>Henüz randevunuz bulunmamaktadır.
+                </div>
+                {% endif %}
+
+                {# Sayfalama kontrolleri #}
+                {% if is_paginated %}
+                    <nav aria-label="Randevu sayfalama">
+                        <ul class="pagination justify-content-center mt-4">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    {# Önceki sayfa linkine mevcut filtre parametrelerini ekle #}
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_client_name %}&client_name={{ current_client_name }}{% endif %}{% if current_date %}&date={{ current_date|date:'Y-m-d' }}{% endif %}">
+                                        Önceki
+                                    </a>
+                                </li>
+                            {% endif %}
+                            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    {# Sonraki sayfa linkine mevcut filtre parametrelerini ekle #}
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_client_name %}&client_name={{ current_client_name }}{% endif %}{% if current_date %}&date={{ current_date|date:'Y-m-d' }}{% endif %}">
+                                        Sonraki
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

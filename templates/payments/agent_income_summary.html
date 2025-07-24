@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load humanize %} {# humanize uygulaması settings.py'ye eklenmiş olmalı #}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Gelir Özeti</h2>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <strong>{{ request.user.get_full_name|default:request.user.username }}</strong> Gelirleri
+        </div>
+        <div class="card-body">
+            <p><strong>Temsilcilik Geliriniz:</strong> {{ direkt_gelir|floatformat:2 }} TL</p>
+            <p><strong>Alt Temsilcilerden Gelen Gelir:</strong> {{ alt_gelir|floatformat:2 }} TL</p>
+            <hr>
+            <p><strong>Toplam Gelir:</strong> <span class="text-success h5">{{ toplam_gelir|floatformat:2 }} TL</span></p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            Alt Temsilciler</div>
+        <div class="card-body">
+            {# alt_temsilciler yerine alt_temsilciler_data kullanıyoruz #}
+            {% if alt_temsilciler_data %} 
+                <table class="table table-sm table-bordered">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Ad Soyad</th>
+                            <th>Temsilci Geliri</th>
+                            <th>Size Düşen Pay</th> {# Kolon başlığını değiştirdim #}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {# alt_temsilciler_data üzerinden döngü kurup doğru anahtarları kullanıyoruz #}
+                        {% for alt_data in alt_temsilciler_data %}
+                        <tr>
+                            <td>{{ alt_data.user.get_full_name|default:alt_data.user.username }}</td>
+                            <td>{{ alt_data.own_earnings|floatformat:2 }} TL</td>
+                            <td>{{ alt_data.share_for_parent_agent|floatformat:2 }} TL</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>Henüz alt temsilciniz yok.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

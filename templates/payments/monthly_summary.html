@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Aylık Ödeme Özeti{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Aylık Ödeme Özeti</h2>
+    {# Django mesajları base.html üzerinden zaten dahil edildiği için bu satır kaldırıldı. #}
+    
+    {# Filtreleme formu #}
+    <form method="GET" class="mb-4 p-3 border rounded bg-light shadow-sm">
+        <div class="row g-3">
+            <div class="col-md-5"> 
+                <label for="expert_filter" class="form-label">Uzmana Göre Filtrele:</label>
+                <select name="expert" id="expert_filter" class="form-select">
+                    <option value="">Tüm Uzmanlar</option>
+                    {% for expert in experts %}
+                        <option value="{{ expert.id }}" {% if expert.id|stringformat:"d" == current_expert %}selected{% endif %}>
+                            {{ expert.user.get_full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5"> 
+                <label for="agent_filter" class="form-label">Temsilciye Göre Filtrele:</label>
+                <select name="agent" id="agent_filter" class="form-select">
+                    <option value="">Tüm Temsilciler</option>
+                    {% for agent in agents %}
+                        <option value="{{ agent.id }}" {% if agent.id|stringformat:"d" == current_agent %}selected{% endif %}>
+                            {{ agent.user.get_full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {# Butonlar #}
+            <div class="col-md-2 d-flex align-items-end justify-content-end">
+                <button type="submit" class="btn btn-primary me-2">Filtrele</button>
+                <a href="{% url 'payments:monthly_summary' %}" class="btn btn-secondary">Temizle</a>
+            </div>
+        </div>
+    </form>
+
+    {% if monthly_data %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>Ay</th>
+                    <th>Toplam Ödenen Tutar</th>
+                    <th>Toplam Uzman Komisyonu</th>
+                    <th>Toplam Temsilci Komisyonu</th>
+                    <th>Klinik Net Kazancı</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in monthly_data %}
+                <tr>
+                    <td><strong>{{ data.month|date:"F Y" }}</strong></td>
+                    <td><strong class="text-primary">{{ data.total_amount_paid|floatformat:2 }} TL</strong></td>
+                    <td><strong class="text-success">{{ data.total_expert_commission|floatformat:2 }} TL</strong></td>
+                    <td><strong class="text-info">{{ data.total_agent_commission|floatformat:2 }} TL</strong></td>
+                    <td>
+                        {# Net kazanç artık view'da hesaplanıp 'net_profit' olarak gönderiliyor #}
+                        <strong class="text-danger">{{ data.net_profit|floatformat:2 }} TL</strong> 
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="alert alert-warning text-center">
+        Henüz aylık ödeme özeti verisi bulunmamaktadır.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{# accounts/expert_dashboard.html #}
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %} {# Başlık ExpertDashboardView'dan gelecek #}
+
+{% load static %} {# Gerekirse statik dosyalar için #}
+
+{% block extra_head %}
+    {# Font Awesome için, eğer base.html'de yoksa #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h1 class="mb-4">{{ title }}</h1>
+            <p>Uzman panelinize hoş geldiniz. Profil bilgilerinizi, yaklaşan randevularınızı ve komisyon özetlerinizi buradan görüntüleyebilirsiniz.</p>
+
+            {# Uzman Profil Bilgileri Kartı #}
+            {% if expert_profile %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h2 class="card-title mb-0"><i class="fas fa-user-md me-2"></i>Profil Bilgilerim</h2>
+                </div>
+                <div class="card-body">
+                    <p><strong>Ad Soyad:</strong> {{ user.get_full_name|default:user.username }}</p>
+                    <p><strong>E-posta:</strong> {{ user.email }}</p>
+                    <p><strong>Telefon Numarası:</strong> {{ expert_profile.phone_number|default:"Belirtilmemiş" }}</p>
+                    <p><strong>Uzmanlık Alanı:</strong> {{ expert_profile.specialization|default:"Belirtilmemiş" }}</p>
+                    <p><strong>Açıklama:</strong> {{ expert_profile.description|default:"Yok" }}</p>
+                    <a href="{% url 'accounts:profile' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-edit me-1"></i>Profili Düzenle
+                    </a>
+                </div>
+            </div>
+
+            {# Toplam Komisyon Özeti Kartı #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h2 class="card-title mb-0"><i class="fas fa-money-check-alt me-2"></i>Toplam Kazanılan Komisyon</h2>
+                </div>
+                <div class="card-body">
+                    <p class="h5 mb-0">Genel Toplam Komisyon:</p>
+                    <strong class="h4 text-success">{{ total_commission|floatformat:2 }} TL</strong>
+                    <div class="mt-2">
+                        <a href="{% url 'payments:expert_commissions' %}" class="btn btn-sm btn-outline-success">
+                            <i class="fas fa-search-dollar me-1"></i>Detaylı Komisyon Raporu
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {# Yaklaşan Randevular Kartı #}
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-warning text-dark">
+                    <h2 class="card-title mb-0"><i class="fas fa-calendar-alt me-2"></i>Yaklaşan Randevularım (Sonraki 30 Gün)</h2>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_appointments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Tarih & Saat</th>
+                                    <th>Müşteri</th>
+                                    <th>Hizmet Tipi</th>
+                                    <th>Durum</th>
+                                    <th>Temsilci</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in upcoming_appointments %}
+                                <tr>
+                                    <td><span class="text-primary">{{ appointment.date|date:"d M Y H:i" }}</span></td>
+                                    <td>{{ appointment.client.get_full_name|default:appointment.client.username }}</td>
+                                    <td>{{ appointment.get_service_type_display }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if appointment.status == 'confirmed' %}bg-success
+                                            {% elif appointment.status == 'pending' %}bg-warning text-dark
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ appointment.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ appointment.agent.user.get_full_name|default:"Yok" }}</td>
+                                    <td>
+                                        <a href="{% url 'appointments:update' appointment.pk %}" class="btn btn-sm btn-outline-primary" title="Randevuyu Düzenle">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {# Ödeme Al butonu: eğer randevu tamamlanmamış ve ödenmemişse göster #}
+                                        {% if appointment.status != 'completed' and not appointment.payment_status %}
+                                            <a href="{% url 'payments:create_payment' appointment.pk %}" class="btn btn-sm btn-outline-info ms-1" title="Ödeme Ekle/Kaydet">
+                                                <i class="fas fa-dollar-sign"></i>
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info" role="alert">
+                        Yaklaşan bir randevunuz bulunmamaktadır.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% else %}
+            <div class="alert alert-danger" role="alert">
+                Uzman profiliniz bulunamadı. Lütfen yöneticinizle iletişime geçin.
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
